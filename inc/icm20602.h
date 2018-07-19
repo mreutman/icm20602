@@ -13,6 +13,11 @@
   * left within the struct */
 #define ICM20602_CONFIG_INIT() \
 	{ \
+		.hal_wr = NULL, \
+		.hal_rd = NULL, \
+		.hal_sleep = NULL, \
+		.mutex_lock = NULL, \
+		.mutex_unlock = NULL, \
 		.use_gyro = false, \
 		.gyro_dlpf = 0, \
 		.gyro_dps = 0, \
@@ -20,13 +25,21 @@
 		.accel_dlpf = 0, \
 		.accel_g = 0, \
 		.sample_rate_div = 1, \
+		.i2c_disable = false, \
 	}
 
 /** This initializer will configure the ICM20602 with settings that should
-  * yield some actual output on both the gyroscope and the accelerometer. It
-  * is recommended to use this for testing purposes. */
+  * yield some actual output on both the gyroscope and the accelerometer. All
+  * that the developer should need to set manually are the "hal_wr", "hal_rd",
+  * and "hal_sleep" function pointers. It is recommended to use this for
+  * testing purposes. */
 #define ICM20602_CONFIG_DEFAULT() \
 	{ \
+		.hal_wr = NULL, \
+		.hal_rd = NULL, \
+		.hal_sleep = NULL, \
+		.mutex_lock = NULL, \
+		.mutex_unlock = NULL, \
 		.use_gyro = true, \
 		.gyro_dlpf = ICM20602_GYRO_DLPF_10_HZ, \
 		.gyro_dps = ICM20602_GYRO_RANGE_2000_DPS, \
@@ -34,12 +47,16 @@
 		.accel_dlpf = ICM20602_ACCEL_DLPF_10_2_HZ, \
 		.accel_g = ICM20602_ACCEL_RANGE_4G, \
 		.sample_rate_div = 100, \
+		.i2c_disable = false, \
 	}
 
 /***** Typedefs *****/
 
 typedef bool (*icm20602_hal_wr)(uint8_t, uint8_t *, uint32_t);
 typedef bool (*icm20602_hal_rd)(uint8_t, uint8_t *, uint32_t);
+typedef void (*icm20602_hal_sleep)(uint32_t ms);
+typedef void (*icm20602_mutex_lock)(void);
+typedef void (*icm20602_mutex_unlock)(void);
 
 /***** Enums *****/
 
@@ -95,6 +112,18 @@ enum icm20602_accel_g {
 /***** Structs *****/
 
 struct icm20602_config {
+	/// Required function pointer for register write function.
+	icm20602_hal_wr hal_wr;
+	/// Required function pointer for register read function.
+	icm20602_hal_rd hal_rd;
+	/// Required function pointer for system sleep/delay.
+	icm20602_hal_sleep hal_sleep;
+
+	/// Optional function pointer to mutex lock if needed, NULL otherwise.
+	icm20602_mutex_lock mutex_lock;
+	/// Optional function pointer to mutex unlocking if needed, NULL otherwise.
+	icm20602_mutex_lock mutex_unlock;
+
 	/// Set to "true" to configure the gyroscope.
 	bool use_gyro;
 	/// Select the digital low pass filter to use with the gyroscope.
@@ -111,25 +140,12 @@ struct icm20602_config {
 
 	/// Divides the data clock for both the accelerometer and gyroscope.
 	uint8_t sample_rate_div;
+
+	/// Disable hardware I2C communications to chip, recommeded if using SPI.
+	bool i2c_disable;
 };
 
 /***** Global Functions *****/
-
-/** \brief Sets HAL register IO functions for I2C communication.
-  * \param wr function pointer to register write function
-  * \param rd function pointer to register read function
-  * \return void
-  */
-extern void
-icm20602_hal_i2c_register(icm20602_hal_wr wr, icm20602_hal_rd rd);
-
-/** \brief Sets HAL register IO functions for SPI communication.
-  * \param wr function pointer to register write function
-  * \param rd function pointer to register read function
-  * \return void
-  */
-extern void
-icm20602_hal_spi_register(icm20602_hal_wr wr, icm20602_hal_rd rd);
 
 /** \brief Initializes the ICM20602 sensor.
   * \param config pointer to configuration struct

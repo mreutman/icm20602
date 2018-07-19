@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include "icm20602.h"
-#include "icm20602_config.h"
 
 /***** Defines *****/
 
@@ -88,37 +87,15 @@
 		dst |= (src_low); \
 	} while (0);
 
-/***** Enums *****/
-
-enum hal_io_type {
-	HAL_INVALID = 0,
-	HAL_I2C,
-	HAL_SPI,
-};
-
 /***** Local Data *****/
 
-static enum hal_io_type _hal_type = HAL_INVALID;
 static icm20602_hal_wr _hal_wr = NULL;
 static icm20602_hal_rd _hal_rd = NULL;
+static icm20602_hal_sleep _hal_sleep = NULL;
+static icm20602_mutex_lock _mutex_lock = NULL;
+static icm20602_mutex_lock _mutex_unlock = NULL;
 
 /***** Global Functions *****/
-
-void
-icm20602_hal_i2c_register(icm20602_hal_wr wr, icm20602_hal_rd rd)
-{
-	_hal_type = HAL_I2C;
-	_hal_wr = wr;
-	_hal_rd = rd;
-}
-
-void
-icm20602_hal_spi_register(icm20602_hal_wr wr, icm20602_hal_rd rd)
-{
-	_hal_type = HAL_SPI;
-	_hal_wr = wr;
-	_hal_rd = rd;
-}
 
 bool
 icm20602_init(struct icm20602_config * config)
@@ -126,7 +103,13 @@ icm20602_init(struct icm20602_config * config)
 	uint8_t tmp = 0;
 	bool r = true;
 
-	if (HAL_INVALID == _hal_type) {
+	_hal_wr = config->hal_wr;
+	_hal_rd = config->hal_rd;
+	_hal_sleep = config->hal_sleep;
+	_mutex_lock = config->mutex_lock;
+	_mutex_unlock = config->mutex_unlock;
+
+	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
 		return false;
 	}
 
@@ -138,7 +121,9 @@ icm20602_init(struct icm20602_config * config)
 	//  5. configure chip
 	//  6. enable accelerometer and gyroscope
 
-	MUTEX_LOCK();
+	if (_mutex_lock) {
+		_mutex_lock();
+	}
 
 	// full reset of chip
 	tmp = 0x80;
@@ -146,7 +131,7 @@ icm20602_init(struct icm20602_config * config)
 	ON_ERROR_GOTO(r, return_err);
 
 	// TODO: better reset delay value
-	SLEEP(1000);
+	_hal_sleep(1000);
 
 	// set clock to internal PLL
 	tmp = 0x01;
@@ -163,7 +148,8 @@ icm20602_init(struct icm20602_config * config)
 	r = _hal_wr(REG_USER_CTRL, &tmp, 1);
 	ON_ERROR_GOTO(r, return_err);
 
-	if (HAL_SPI == _hal_type) {
+	if (config->i2c_disable) {
+		// disable chip I2C communications
 		tmp = 0x40;
 		r = _hal_wr(REG_I2C_IF, &tmp, 1);
 		ON_ERROR_GOTO(r, return_err);
@@ -232,7 +218,11 @@ icm20602_init(struct icm20602_config * config)
 	ON_ERROR_GOTO(r, return_err);
 
 return_err:
-	MUTEX_UNLOCK();
+
+	if (_mutex_unlock) {
+		_mutex_unlock();
+	}
+
 	return r;
 }
 
@@ -242,11 +232,13 @@ icm20602_read_gyro(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 	uint8_t buf[6] = {0};
 	bool r = true;
 
-	if (HAL_INVALID == _hal_type) {
+	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
 		return false;
 	}
 
-	MUTEX_LOCK();
+	if (_mutex_lock) {
+		_mutex_lock();
+	}
 
 	r = _hal_rd(REG_GYRO_XOUT_H, buf, 6);
 	ON_ERROR_GOTO(r, return_err);
@@ -256,7 +248,11 @@ icm20602_read_gyro(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 	UINT8_TO_INT16(*p_z, buf[4], buf[5]);
 
 return_err:
-	MUTEX_UNLOCK();
+
+	if (_mutex_unlock) {
+		_mutex_unlock();
+	}
+
 	return r;
 }
 
@@ -266,11 +262,13 @@ icm20602_read_accel(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 	uint8_t buf[6] = {0};
 	bool r = true;
 
-	if (HAL_INVALID == _hal_type) {
+	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
 		return false;
 	}
 
-	MUTEX_LOCK();
+	if (_mutex_lock) {
+		_mutex_lock();
+	}
 
 	r = _hal_rd(REG_ACCEL_XOUT_H, buf, 6);
 	ON_ERROR_GOTO(r, return_err);
@@ -280,7 +278,11 @@ icm20602_read_accel(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 	UINT8_TO_INT16(*p_z, buf[4], buf[5]);
 
 return_err:
-	MUTEX_UNLOCK();
+
+	if (_mutex_unlock) {
+		_mutex_unlock();
+	}
+
 	return r;
 }
 
@@ -291,11 +293,13 @@ icm20602_read_data(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
 	uint8_t buf[12] = {0};
 	bool r = true;
 
-	if (HAL_INVALID == _hal_type) {
+	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
 		return false;
 	}
 
-	MUTEX_LOCK();
+	if (_mutex_lock) {
+		_mutex_lock();
+	}
 
 	r = _hal_rd(REG_ACCEL_XOUT_H, buf, 12);
 	ON_ERROR_GOTO(r, return_err);
@@ -308,6 +312,10 @@ icm20602_read_data(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
 	UINT8_TO_INT16(*p_gz, buf[10], buf[11]);
 
 return_err:
-	MUTEX_UNLOCK();
+
+	if (_mutex_unlock) {
+		_mutex_unlock();
+	}
+
 	return r;
 }
