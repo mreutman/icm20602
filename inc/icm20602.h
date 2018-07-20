@@ -154,35 +154,71 @@ struct icm20602_config {
 extern bool
 icm20602_init(struct icm20602_config * config);
 
-/** \brief Reads current value of gyroscope.
+/** \brief Reads current G-force values of accelerometer.
+  * \param p_x destination for x G value
+  * \param p_y destination for y G value
+  * \param p_z destination for z G value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_accel(float * p_x, float * p_y, float * p_z);
+
+
+/** \brief Reads current degrees per second values of gyroscope.
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_gyro(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+icm20602_read_gyro(float * p_x, float * p_y, float * p_z);
 
-/** \brief Reads current value of accelerometer.
+/** \brief Reads current values of accelerometer and gyroscope.
+  * \param p_ax destination for accelerometer x G value
+  * \param p_ay destination for accelerometer y G value
+  * \param p_az destination for accelerometer z G value
+  * \param p_gx destination for gyroscope x DPS value
+  * \param p_gy destination for gyroscope y DPS value
+  * \param p_gz destination for gyroscope z DPS value
+  * \param p_t destination for temperature degrees C value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_data(float * p_ax, float * p_ay, float * p_az,
+	float * p_gx, float * p_gy, float * p_gz, float * p_t);
+
+
+/** \brief Reads current raw values of accelerometer.
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_accel(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+icm20602_read_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
 
-/** \brief Reads current value of accelerometer and gyroscope.
+
+/** \brief Reads current raw values of gyroscope.
+  * \param p_x destination for x value
+  * \param p_y destination for y value
+  * \param p_z destination for z value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+
+/** \brief Reads current raw values of accelerometer and gyroscope.
   * \param p_ax destination for accelerometer x value
   * \param p_ay destination for accelerometer y value
   * \param p_az destination for accelerometer z value
   * \param p_gx destination for gyroscope x value
   * \param p_gy destination for gyroscope y value
   * \param p_gz destination for gyroscope z value
+  * \param p_t destination for temperature value
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_data(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
-	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz);
+icm20602_read_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
+	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t);
 
 #endif

@@ -95,6 +95,52 @@ static icm20602_hal_sleep _hal_sleep = NULL;
 static icm20602_mutex_lock _mutex_lock = NULL;
 static icm20602_mutex_lock _mutex_unlock = NULL;
 
+static float _temp_sensitivity = 326.8;
+static float _accel_sensitivity = 0.0;
+static float _gyro_sensitivity = 0.0;
+
+/***** Local Functions *****/
+
+/// Used to convert raw accelerometer readings to G-force.
+void
+_set_accel_sensitivity(enum icm20602_accel_g accel_g)
+{
+	switch (accel_g) {
+	case (ICM20602_ACCEL_RANGE_2G):
+		_accel_sensitivity = 16384.0;
+		break;
+	case (ICM20602_ACCEL_RANGE_4G):
+		_accel_sensitivity = 8192.0;
+		break;
+	case (ICM20602_ACCEL_RANGE_8G):
+		_accel_sensitivity = 4096.0;
+		break;
+	case (ICM20602_ACCEL_RANGE_16G):
+		_accel_sensitivity = 2048.0;
+		break;
+	}
+}
+
+/// Used to convert raw gyroscope readings to degrees per second.
+void
+_set_gyro_sensitivity(enum icm20602_gyro_dps gyro_dps)
+{
+	switch (gyro_dps) {
+	case (ICM20602_GYRO_RANGE_250_DPS):
+		_gyro_sensitivity = 131.0;
+		break;
+	case (ICM20602_GYRO_RANGE_500_DPS):
+		_gyro_sensitivity = 65.5;
+		break;
+	case (ICM20602_GYRO_RANGE_1000_DPS):
+		_gyro_sensitivity = 32.8;
+		break;
+	case (ICM20602_GYRO_RANGE_2000_DPS):
+		_gyro_sensitivity = 16.4;
+		break;
+	}
+}
+
 /***** Global Functions *****/
 
 bool
@@ -156,6 +202,9 @@ icm20602_init(struct icm20602_config * config)
 	}
 
 	if (config->use_gyro) {
+
+		_set_gyro_sensitivity(config->gyro_dps);
+
 		if (ICM20602_GYRO_DLPF_BYPASS_3281_HZ == config->gyro_dlpf) {
 			// bypass dpf and set dps
 			tmp = 0x00;
@@ -189,6 +238,9 @@ icm20602_init(struct icm20602_config * config)
 	}
 
 	if (config->use_accel) {
+
+		_set_accel_sensitivity(config->accel_g);
+
 		if (ICM20602_ACCEL_DLPF_BYPASS_1046_HZ == config->accel_dlpf) {
 			tmp = (1 << 3);
 			r = _hal_wr(REG_ACCEL_CONFIG_2, &tmp, 1);
@@ -227,37 +279,60 @@ return_err:
 }
 
 bool
-icm20602_read_gyro(int16_t * p_x, int16_t * p_y, int16_t * p_z)
+icm20602_read_accel(float * p_x, float * p_y, float * p_z)
 {
-	uint8_t buf[6] = {0};
+	int16_t x, y, z;
 	bool r = true;
 
-	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
-		return false;
-	}
-
-	if (_mutex_lock) {
-		_mutex_lock();
-	}
-
-	r = _hal_rd(REG_GYRO_XOUT_H, buf, 6);
-	ON_ERROR_GOTO(r, return_err);
-
-	UINT8_TO_INT16(*p_x, buf[0], buf[1]);
-	UINT8_TO_INT16(*p_y, buf[2], buf[3]);
-	UINT8_TO_INT16(*p_z, buf[4], buf[5]);
-
-return_err:
-
-	if (_mutex_unlock) {
-		_mutex_unlock();
+	r = icm20602_read_gyro_raw(&x, &y, &z);
+	if (r) {
+		*p_x = ((float) x) / _accel_sensitivity;
+		*p_y = ((float) y) / _accel_sensitivity;
+		*p_z = ((float) z) / _accel_sensitivity;
 	}
 
 	return r;
 }
 
-extern bool
-icm20602_read_accel(int16_t * p_x, int16_t * p_y, int16_t * p_z)
+bool
+icm20602_read_gyro(float * p_x, float * p_y, float * p_z)
+{
+	int16_t x, y, z;
+	bool r = true;
+
+	r = icm20602_read_gyro_raw(&x, &y, &z);
+	if (r) {
+		*p_x = ((float) x) / _gyro_sensitivity;
+		*p_y = ((float) y) / _gyro_sensitivity;
+		*p_z = ((float) z) / _gyro_sensitivity;
+	}
+
+	return r;
+}
+
+bool
+icm20602_read_data(float * p_ax, float * p_ay, float * p_az,
+	float * p_gx, float * p_gy, float * p_gz, float * p_t)
+{
+	int16_t ax, ay, az, gx, gy, gz, t;
+	bool r = true;
+
+	r = icm20602_read_data_raw(&ax, &ay, &az, &gx, &gy, &gz, &t);
+	if (r) {
+		*p_ax = ((float) ax) / _accel_sensitivity;
+		*p_ay = ((float) ay) / _accel_sensitivity;
+		*p_az = ((float) az) / _accel_sensitivity;
+		*p_gx = ((float) gx) / _gyro_sensitivity;
+		*p_gy = ((float) gy) / _gyro_sensitivity;
+		*p_gz = ((float) gz) / _gyro_sensitivity;
+		*p_t = ((float) t) / _temp_sensitivity;
+	}
+
+	return r;
+}
+
+bool
+icm20602_read_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 {
 	uint8_t buf[6] = {0};
 	bool r = true;
@@ -286,11 +361,10 @@ return_err:
 	return r;
 }
 
-extern bool
-icm20602_read_data(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
-	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz)
+bool
+icm20602_read_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 {
-	uint8_t buf[12] = {0};
+	uint8_t buf[6] = {0};
 	bool r = true;
 
 	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
@@ -301,15 +375,47 @@ icm20602_read_data(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
 		_mutex_lock();
 	}
 
-	r = _hal_rd(REG_ACCEL_XOUT_H, buf, 12);
+	r = _hal_rd(REG_GYRO_XOUT_H, buf, 6);
+	ON_ERROR_GOTO(r, return_err);
+
+	UINT8_TO_INT16(*p_x, buf[0], buf[1]);
+	UINT8_TO_INT16(*p_y, buf[2], buf[3]);
+	UINT8_TO_INT16(*p_z, buf[4], buf[5]);
+
+return_err:
+
+	if (_mutex_unlock) {
+		_mutex_unlock();
+	}
+
+	return r;
+}
+
+bool
+icm20602_read_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
+	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t)
+{
+	uint8_t buf[14] = {0};
+	bool r = true;
+
+	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
+		return false;
+	}
+
+	if (_mutex_lock) {
+		_mutex_lock();
+	}
+
+	r = _hal_rd(REG_ACCEL_XOUT_H, buf, 14);
 	ON_ERROR_GOTO(r, return_err);
 
 	UINT8_TO_INT16(*p_ax, buf[0], buf[1]);
 	UINT8_TO_INT16(*p_ay, buf[2], buf[3]);
 	UINT8_TO_INT16(*p_az, buf[4], buf[5]);
-	UINT8_TO_INT16(*p_gx, buf[6], buf[7]);
-	UINT8_TO_INT16(*p_gy, buf[8], buf[9]);
-	UINT8_TO_INT16(*p_gz, buf[10], buf[11]);
+	UINT8_TO_INT16(*p_t, buf[6], buf[7]);
+	UINT8_TO_INT16(*p_gx, buf[8], buf[9]);
+	UINT8_TO_INT16(*p_gy, buf[10], buf[11]);
+	UINT8_TO_INT16(*p_gz, buf[12], buf[13]);
 
 return_err:
 
