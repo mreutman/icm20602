@@ -18,12 +18,14 @@
 		.hal_sleep = NULL, \
 		.mutex_lock = NULL, \
 		.mutex_unlock = NULL, \
-		.use_gyro = false, \
-		.gyro_dlpf = 0, \
-		.gyro_dps = 0, \
 		.use_accel = false, \
+		.accel_fifo = false, \
 		.accel_dlpf = 0, \
 		.accel_g = 0, \
+		.use_gyro = false, \
+		.gyro_fifo = false, \
+		.gyro_dlpf = 0, \
+		.gyro_dps = 0, \
 		.sample_rate_div = 1, \
 		.i2c_disable = false, \
 	}
@@ -40,12 +42,14 @@
 		.hal_sleep = NULL, \
 		.mutex_lock = NULL, \
 		.mutex_unlock = NULL, \
-		.use_gyro = true, \
-		.gyro_dlpf = ICM20602_GYRO_DLPF_10_HZ, \
-		.gyro_dps = ICM20602_GYRO_RANGE_2000_DPS, \
 		.use_accel = true, \
+		.accel_fifo = false, \
 		.accel_dlpf = ICM20602_ACCEL_DLPF_10_2_HZ, \
 		.accel_g = ICM20602_ACCEL_RANGE_4G, \
+		.use_gyro = true, \
+		.gyro_fifo = false, \
+		.gyro_dlpf = ICM20602_GYRO_DLPF_10_HZ, \
+		.gyro_dps = ICM20602_GYRO_RANGE_2000_DPS, \
 		.sample_rate_div = 100, \
 		.i2c_disable = false, \
 	}
@@ -59,6 +63,30 @@ typedef void (*icm20602_mutex_lock)(void);
 typedef void (*icm20602_mutex_unlock)(void);
 
 /***** Enums *****/
+
+/** Enumerated value corresponds with A_DLPF_CFG in the ACCEL_CONFIG2 register
+  * unless BYPASS is specified in the name. If BYPASS is used, the DLPF is
+  * removed from the signal path and ACCEL_FCHOICE_B is set in the
+  * ACCEL_CONFIG2 register. */
+enum icm20602_accel_dlpf {
+	ICM20602_ACCEL_DLPF_218_1_HZ = 0, // data clocked at 1kHz
+	ICM20602_ACCEL_DLPF_99_HZ = 2, // data clocked at 1kHz
+	ICM20602_ACCEL_DLPF_44_8_HZ = 3, // data clocked at 1kHz
+	ICM20602_ACCEL_DLPF_21_2_HZ = 4, // data clocked at 1kHz
+	ICM20602_ACCEL_DLPF_10_2_HZ = 5, // data clocked at 1kHz
+	ICM20602_ACCEL_DLPF_5_1_HZ = 6, // data clocked at 1kHz
+	ICM20602_ACCEL_DLPF_420_HZ = 7, // data clocked at 1kHz
+	ICM20602_ACCEL_DLPF_BYPASS_1046_HZ, // no filter, data clocked at 4kHz
+};
+
+/** Enumerated value corresponds with ACCEL_FS_SEL in the ACCEL_CONFIG
+  * register. Values listed are the full +/- G range. */
+enum icm20602_accel_g {
+	ICM20602_ACCEL_RANGE_2G = 0,
+	ICM20602_ACCEL_RANGE_4G = 1,
+	ICM20602_ACCEL_RANGE_8G = 2,
+	ICM20602_ACCEL_RANGE_16G = 3,
+};
 
 /** Enumerated value corresponds with DLPF_CFG in the CONFIG register unless
   * BYPASS is specified in the name. If BYPASS is used, the DLPF is removed
@@ -77,36 +105,12 @@ enum icm20602_gyro_dlpf {
 };
 
 /** Enumerated value corresponds with FS_SEL in the GYRO_CONFIG register.
-  * Values listed are the full +/- DPS range. */  
+  * Values listed are the full +/- DPS range. */
 enum icm20602_gyro_dps {
 	ICM20602_GYRO_RANGE_250_DPS = 0,
 	ICM20602_GYRO_RANGE_500_DPS = 1,
 	ICM20602_GYRO_RANGE_1000_DPS = 2,
 	ICM20602_GYRO_RANGE_2000_DPS = 3,
-};
-
-/** Enumerated value corresponds with A_DLPF_CFG in the ACCEL_CONFIG2 register
-  * unless BYPASS is specified in the name. If BYPASS is used, the DLPF is
-  * removed from the signal path and ACCEL_FCHOICE_B is set in the
-  * ACCEL_CONFIG2 register. */
-enum icm20602_accel_dlpf {
-	ICM20602_ACCEL_DLPF_218_1_HZ = 0, // data clocked at 1kHz
-	ICM20602_ACCEL_DLPF_99_HZ = 2, // data clocked at 1kHz
-	ICM20602_ACCEL_DLPF_44_8_HZ = 3, // data clocked at 1kHz
-	ICM20602_ACCEL_DLPF_21_2_HZ = 4, // data clocked at 1kHz
-	ICM20602_ACCEL_DLPF_10_2_HZ = 5, // data clocked at 1kHz
-	ICM20602_ACCEL_DLPF_5_1_HZ = 6, // data clocked at 1kHz
-	ICM20602_ACCEL_DLPF_420_HZ = 7, // data clocked at 1kHz
-	ICM20602_ACCEL_DLPF_BYPASS_1046_HZ, // no filter, data clocked at 4kHz
-};
-
-/** Enumerated value corresponds with ACCEL_FS_SEL in the ACCEL_CONFIG
-  * register. Values listed are the full +/- G range. */  
-enum icm20602_accel_g {
-	ICM20602_ACCEL_RANGE_2G = 0,
-	ICM20602_ACCEL_RANGE_4G = 1,
-	ICM20602_ACCEL_RANGE_8G = 2,
-	ICM20602_ACCEL_RANGE_16G = 3,
 };
 
 /***** Structs *****/
@@ -124,19 +128,23 @@ struct icm20602_config {
 	/// Optional function pointer to mutex unlocking if needed, NULL otherwise.
 	icm20602_mutex_lock mutex_unlock;
 
-	/// Set to "true" to configure the gyroscope.
-	bool use_gyro;
-	/// Select the digital low pass filter to use with the gyroscope.
-	enum icm20602_gyro_dlpf gyro_dlpf;
-	/// Select the gyroscope's degrees per second range.
-	enum icm20602_gyro_dps gyro_dps;
-
 	/// Set to "true" to configure the accelerometer.
 	bool use_accel;
+	/// Enable or disable fifo for accelerometer.
+	bool accel_fifo;
 	/// Select the digital low pass filter to use with the accelerometer.
 	enum icm20602_accel_dlpf accel_dlpf;
 	/// Select the accelerometer's g-force range.
 	enum icm20602_accel_g accel_g;
+
+	/// Set to "true" to configure the gyroscope.
+	bool use_gyro;
+	/// Enable or disable fifo for gyroscope.
+	bool gyro_fifo;
+	/// Select the digital low pass filter to use with the gyroscope.
+	enum icm20602_gyro_dlpf gyro_dlpf;
+	/// Select the gyroscope's degrees per second range.
+	enum icm20602_gyro_dps gyro_dps;
 
 	/// Divides the data clock for both the accelerometer and gyroscope.
 	uint8_t sample_rate_div;
@@ -163,7 +171,6 @@ icm20602_init(struct icm20602_config * config);
 extern bool
 icm20602_read_accel(float * p_x, float * p_y, float * p_z);
 
-
 /** \brief Reads current degrees per second values of gyroscope.
   * \param p_x destination for x value
   * \param p_y destination for y value
@@ -187,7 +194,6 @@ extern bool
 icm20602_read_data(float * p_ax, float * p_ay, float * p_az,
 	float * p_gx, float * p_gy, float * p_gz, float * p_t);
 
-
 /** \brief Reads current raw values of accelerometer.
   * \param p_x destination for x value
   * \param p_y destination for y value
@@ -196,7 +202,6 @@ icm20602_read_data(float * p_ax, float * p_ay, float * p_az,
   */
 extern bool
 icm20602_read_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
-
 
 /** \brief Reads current raw values of gyroscope.
   * \param p_x destination for x value
@@ -219,6 +224,74 @@ icm20602_read_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
   */
 extern bool
 icm20602_read_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
+	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t);
+
+/** \brief Reads FIFO G-force values of accelerometer.
+  * \param p_x destination for x G value
+  * \param p_y destination for y G value
+  * \param p_z destination for z G value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_accel_fifo(float * x, float * y, float * z);
+
+/** \brief Reads FIFO degrees per second values of gyroscope.
+  * \param p_x destination for x value
+  * \param p_y destination for y value
+  * \param p_z destination for z value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_gyro_fifo(float * x, float * y, float * z);
+
+/** \brief Reads FIFO values of accelerometer and gyroscope. Note, both
+  *        accelerometer and gyroscope fifos should be enabled if this
+  *        function is to be used.
+  * \param p_ax destination for accelerometer x G value
+  * \param p_ay destination for accelerometer y G value
+  * \param p_az destination for accelerometer z G value
+  * \param p_gx destination for gyroscope x DPS value
+  * \param p_gy destination for gyroscope y DPS value
+  * \param p_gz destination for gyroscope z DPS value
+  * \param p_t destination for temperature degrees C value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_fifo_data(float * p_ax, float * p_ay, float * p_az,
+	float * p_gx, float * p_gy, float * p_gz, float * p_t);
+
+/** \brief Reads FIFO raw values of accelerometer.
+  * \param p_x destination for x value
+  * \param p_y destination for y value
+  * \param p_z destination for z value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_fifo_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+
+/** \brief Reads FIFO raw values of gyroscope.
+  * \param p_x destination for x value
+  * \param p_y destination for y value
+  * \param p_z destination for z value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_fifo_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+
+/** \brief Reads FIFO raw values of accelerometer and gyroscope. Note, both
+  *        accelerometer and gyroscope fifos should be enabled if this
+  *        function is to be used.
+  * \param p_ax destination for accelerometer x value
+  * \param p_ay destination for accelerometer y value
+  * \param p_az destination for accelerometer z value
+  * \param p_gx destination for gyroscope x value
+  * \param p_gy destination for gyroscope y value
+  * \param p_gz destination for gyroscope z value
+  * \param p_t destination for temperature value
+  * \return true on success, error on failure
+  */
+extern bool
+icm20602_read_fifo_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
 	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t);
 
 #endif
