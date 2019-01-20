@@ -76,16 +76,16 @@
 /***** Macros *****/
 
 #define ON_ERROR_GOTO(cond, symbol) \
-	if (!(cond)) { goto symbol; }
+  if (!(cond)) { goto symbol; }
 
 // extra steps, but I'm paranoid about some compilers/systems not handling the
 // conversion from uint8_t to int16_t correctly
 #define UINT8_TO_INT16(dst, src_high, src_low) \
-	do { \
-		dst = (src_high); \
-		dst <<= 8; \
-		dst |= (src_low); \
-	} while (0);
+  do { \
+    dst = (src_high); \
+    dst <<= 8; \
+    dst |= (src_low); \
+  } while (0);
 
 /***** Local Data *****/
 
@@ -105,62 +105,62 @@ static float _gyro_sensitivity = 0.0;
 void
 _set_accel_sensitivity(enum icm20602_accel_g accel_g)
 {
-	switch (accel_g) {
-	case (ICM20602_ACCEL_RANGE_2G):
-		_accel_sensitivity = 16384.0;
-		break;
-	case (ICM20602_ACCEL_RANGE_4G):
-		_accel_sensitivity = 8192.0;
-		break;
-	case (ICM20602_ACCEL_RANGE_8G):
-		_accel_sensitivity = 4096.0;
-		break;
-	case (ICM20602_ACCEL_RANGE_16G):
-		_accel_sensitivity = 2048.0;
-		break;
-	}
+  switch (accel_g) {
+  case (ICM20602_ACCEL_RANGE_2G):
+    _accel_sensitivity = 16384.0;
+    break;
+  case (ICM20602_ACCEL_RANGE_4G):
+    _accel_sensitivity = 8192.0;
+    break;
+  case (ICM20602_ACCEL_RANGE_8G):
+    _accel_sensitivity = 4096.0;
+    break;
+  case (ICM20602_ACCEL_RANGE_16G):
+    _accel_sensitivity = 2048.0;
+    break;
+  }
 }
 
 /// Used to convert raw gyroscope readings to degrees per second.
 void
 _set_gyro_sensitivity(enum icm20602_gyro_dps gyro_dps)
 {
-	switch (gyro_dps) {
-	case (ICM20602_GYRO_RANGE_250_DPS):
-		_gyro_sensitivity = 131.0;
-		break;
-	case (ICM20602_GYRO_RANGE_500_DPS):
-		_gyro_sensitivity = 65.5;
-		break;
-	case (ICM20602_GYRO_RANGE_1000_DPS):
-		_gyro_sensitivity = 32.8;
-		break;
-	case (ICM20602_GYRO_RANGE_2000_DPS):
-		_gyro_sensitivity = 16.4;
-		break;
-	}
+  switch (gyro_dps) {
+  case (ICM20602_GYRO_RANGE_250_DPS):
+    _gyro_sensitivity = 131.0;
+    break;
+  case (ICM20602_GYRO_RANGE_500_DPS):
+    _gyro_sensitivity = 65.5;
+    break;
+  case (ICM20602_GYRO_RANGE_1000_DPS):
+    _gyro_sensitivity = 32.8;
+    break;
+  case (ICM20602_GYRO_RANGE_2000_DPS):
+    _gyro_sensitivity = 16.4;
+    break;
+  }
 }
 
 bool
 _read_data(uint8_t reg, uint8_t * buf, uint32_t len)
 {
-	bool r = true;
+  bool r = true;
 
-	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
-		return false;
-	}
+  if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
+    return false;
+  }
 
-	if (_mutex_lock) {
-		_mutex_lock();
-	}
+  if (_mutex_lock) {
+    _mutex_lock();
+  }
 
-	r = _hal_rd(reg, buf, len);
+  r = _hal_rd(reg, buf, len);
 
-	if (_mutex_unlock) {
-		_mutex_unlock();
-	}
+  if (_mutex_unlock) {
+    _mutex_unlock();
+  }
 
-	return r;
+  return r;
 }
 
 /***** Global Functions *****/
@@ -168,353 +168,353 @@ _read_data(uint8_t reg, uint8_t * buf, uint32_t len)
 bool
 icm20602_init(struct icm20602_config * config)
 {
-	uint8_t tmp = 0;
-	bool r = true;
+  uint8_t tmp = 0;
+  bool r = true;
 
-	_hal_wr = config->hal_wr;
-	_hal_rd = config->hal_rd;
-	_hal_sleep = config->hal_sleep;
-	_mutex_lock = config->mutex_lock;
-	_mutex_unlock = config->mutex_unlock;
+  _hal_wr = config->hal_wr;
+  _hal_rd = config->hal_rd;
+  _hal_sleep = config->hal_sleep;
+  _mutex_lock = config->mutex_lock;
+  _mutex_unlock = config->mutex_unlock;
 
-	if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
-		return false;
-	}
+  if ((!_hal_wr) || (!_hal_rd) || (!_hal_sleep)) {
+    return false;
+  }
 
-	// General Procedure:
-	//  1. reset chip
-	//  2. set clock for PLL for optimum performance as documented in datasheet
-	//  3. place accelerometer and gyroscope into standby
-	//  4. disable fifo
-	//  5. configure chip
-	//  6. enable accelerometer and gyroscope
+  // General Procedure:
+  //  1. reset chip
+  //  2. set clock for PLL for optimum performance as documented in datasheet
+  //  3. place accelerometer and gyroscope into standby
+  //  4. disable fifo
+  //  5. configure chip
+  //  6. enable accelerometer and gyroscope
 
-	if (_mutex_lock) {
-		_mutex_lock();
-	}
+  if (_mutex_lock) {
+    _mutex_lock();
+  }
 
-	// full reset of chip
-	tmp = 0x80;
-	r = _hal_wr(REG_PWR_MGMT_1, &tmp, 1);
-	ON_ERROR_GOTO(r, return_err);
+  // full reset of chip
+  tmp = 0x80;
+  r = _hal_wr(REG_PWR_MGMT_1, &tmp, 1);
+  ON_ERROR_GOTO(r, return_err);
 
-	// TODO: better reset delay value
-	_hal_sleep(1000);
+  // TODO: better reset delay value
+  _hal_sleep(1000);
 
-	// set clock to internal PLL
-	tmp = 0x01;
-	r = _hal_wr(REG_PWR_MGMT_1, &tmp, 1);
-	ON_ERROR_GOTO(r, return_err);
+  // set clock to internal PLL
+  tmp = 0x01;
+  r = _hal_wr(REG_PWR_MGMT_1, &tmp, 1);
+  ON_ERROR_GOTO(r, return_err);
 
-	// place accel and gyro on standby
-	tmp = 0x3F;
-	r = _hal_wr(REG_PWR_MGMT_2, &tmp, 1);
-	ON_ERROR_GOTO(r, return_err);
+  // place accel and gyro on standby
+  tmp = 0x3F;
+  r = _hal_wr(REG_PWR_MGMT_2, &tmp, 1);
+  ON_ERROR_GOTO(r, return_err);
 
-	// disable fifo
-	tmp = 0x00;
-	r = _hal_wr(REG_USER_CTRL, &tmp, 1);
-	ON_ERROR_GOTO(r, return_err);
+  // disable fifo
+  tmp = 0x00;
+  r = _hal_wr(REG_USER_CTRL, &tmp, 1);
+  ON_ERROR_GOTO(r, return_err);
 
-	if (config->i2c_disable) {
-		// disable chip I2C communications
-		tmp = 0x40;
-		r = _hal_wr(REG_I2C_IF, &tmp, 1);
-		ON_ERROR_GOTO(r, return_err);
-	}
+  if (config->i2c_disable) {
+    // disable chip I2C communications
+    tmp = 0x40;
+    r = _hal_wr(REG_I2C_IF, &tmp, 1);
+    ON_ERROR_GOTO(r, return_err);
+  }
 
-	if (config->use_accel) {
+  if (config->use_accel) {
 
-		_set_accel_sensitivity(config->accel_g);
+    _set_accel_sensitivity(config->accel_g);
 
-		if (ICM20602_ACCEL_DLPF_BYPASS_1046_HZ == config->accel_dlpf) {
-			tmp = (1 << 3);
-			r = _hal_wr(REG_ACCEL_CONFIG_2, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
-		}
-		else {
-			tmp = config->accel_dlpf;
-			r = _hal_wr(REG_ACCEL_CONFIG_2, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
-		}
+    if (ICM20602_ACCEL_DLPF_BYPASS_1046_HZ == config->accel_dlpf) {
+      tmp = (1 << 3);
+      r = _hal_wr(REG_ACCEL_CONFIG_2, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
+    }
+    else {
+      tmp = config->accel_dlpf;
+      r = _hal_wr(REG_ACCEL_CONFIG_2, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
+    }
 
-		tmp = (config->accel_g) << 2;
-		r = _hal_wr(REG_ACCEL_CONFIG, &tmp, 1);
-		ON_ERROR_GOTO(r, return_err);
-	}
+    tmp = (config->accel_g) << 2;
+    r = _hal_wr(REG_ACCEL_CONFIG, &tmp, 1);
+    ON_ERROR_GOTO(r, return_err);
+  }
 
-	if (config->use_gyro) {
+  if (config->use_gyro) {
 
-		_set_gyro_sensitivity(config->gyro_dps);
+    _set_gyro_sensitivity(config->gyro_dps);
 
-		if (ICM20602_GYRO_DLPF_BYPASS_3281_HZ == config->gyro_dlpf) {
-			// bypass dpf and set dps
-			tmp = 0x00;
-			r = _hal_wr(REG_CONFIG, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
+    if (ICM20602_GYRO_DLPF_BYPASS_3281_HZ == config->gyro_dlpf) {
+      // bypass dpf and set dps
+      tmp = 0x00;
+      r = _hal_wr(REG_CONFIG, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
 
-			tmp = (config->gyro_dps << 3) | 0x02; // see table page 37 of datasheet
-			r = _hal_wr(REG_GYRO_CONFIG, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
-		}
-		else if (ICM20602_GYRO_DLPF_BYPASS_8173_HZ == config->gyro_dlpf) {
-			// bypass dpf and set dps
-			tmp = 0x00;
-			r = _hal_wr(REG_CONFIG, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
+      tmp = (config->gyro_dps << 3) | 0x02; // see table page 37 of datasheet
+      r = _hal_wr(REG_GYRO_CONFIG, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
+    }
+    else if (ICM20602_GYRO_DLPF_BYPASS_8173_HZ == config->gyro_dlpf) {
+      // bypass dpf and set dps
+      tmp = 0x00;
+      r = _hal_wr(REG_CONFIG, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
 
-			tmp = (config->gyro_dps << 3) | 0x01; // see table page 37 of datasheet
-			r = _hal_wr(REG_GYRO_CONFIG, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
-		}
-		else {
-			// configure dpf and set dps
-			tmp = config->gyro_dlpf;
-			r = _hal_wr(REG_CONFIG, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
+      tmp = (config->gyro_dps << 3) | 0x01; // see table page 37 of datasheet
+      r = _hal_wr(REG_GYRO_CONFIG, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
+    }
+    else {
+      // configure dpf and set dps
+      tmp = config->gyro_dlpf;
+      r = _hal_wr(REG_CONFIG, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
 
-			tmp = config->gyro_dps << 3;
-			r = _hal_wr(REG_GYRO_CONFIG, &tmp, 1);
-			ON_ERROR_GOTO(r, return_err);
-		}
-	}
+      tmp = config->gyro_dps << 3;
+      r = _hal_wr(REG_GYRO_CONFIG, &tmp, 1);
+      ON_ERROR_GOTO(r, return_err);
+    }
+  }
 
-	// enable FIFO if requested
-	tmp = ((config->use_accel) && (config->accel_fifo)) ? 0x08 : 0x00;
-	tmp |= ((config->use_gyro) && (config->gyro_fifo)) ? 0x10 : 0x00;
-	r = _hal_wr(REG_FIFO_EN, &tmp, 1);
-	ON_ERROR_GOTO(r, return_err);
+  // enable FIFO if requested
+  tmp = ((config->use_accel) && (config->accel_fifo)) ? 0x08 : 0x00;
+  tmp |= ((config->use_gyro) && (config->gyro_fifo)) ? 0x10 : 0x00;
+  r = _hal_wr(REG_FIFO_EN, &tmp, 1);
+  ON_ERROR_GOTO(r, return_err);
 
-	// configure sample rate divider (TODO: is this gyro only?)
-	// note: SAMPLE_RATE = INTERNAL_SAMPLE_RATE / (1 + SMPLRT_DIV)
-	tmp = (0 != config->sample_rate_div) ? config->sample_rate_div - 1 : 1;
-	r = _hal_wr(REG_SMPLRT_DIV, &tmp, 1);
-	ON_ERROR_GOTO(r, return_err);
+  // configure sample rate divider (TODO: is this gyro only?)
+  // note: SAMPLE_RATE = INTERNAL_SAMPLE_RATE / (1 + SMPLRT_DIV)
+  tmp = (0 != config->sample_rate_div) ? config->sample_rate_div - 1 : 1;
+  r = _hal_wr(REG_SMPLRT_DIV, &tmp, 1);
+  ON_ERROR_GOTO(r, return_err);
 
-	tmp = 0;
-	tmp |= (config->use_gyro) ? 0 : 0x07; // 0 - on, 1 - disabled
-	tmp |= (config->use_accel) ? 0 : 0x38; // 0 - on, 1 - disabled
-	r = _hal_wr(REG_PWR_MGMT_2, &tmp, 1);
-	ON_ERROR_GOTO(r, return_err);
+  tmp = 0;
+  tmp |= (config->use_gyro) ? 0 : 0x07; // 0 - on, 1 - disabled
+  tmp |= (config->use_accel) ? 0 : 0x38; // 0 - on, 1 - disabled
+  r = _hal_wr(REG_PWR_MGMT_2, &tmp, 1);
+  ON_ERROR_GOTO(r, return_err);
 
 return_err:
 
-	if (_mutex_unlock) {
-		_mutex_unlock();
-	}
+  if (_mutex_unlock) {
+    _mutex_unlock();
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_accel(float * p_x, float * p_y, float * p_z)
 {
-	int16_t x, y, z;
-	bool r = true;
+  int16_t x, y, z;
+  bool r = true;
 
-	r = icm20602_read_accel_raw(&x, &y, &z);
-	if (r) {
-		*p_x = ((float) x) / _accel_sensitivity;
-		*p_y = ((float) y) / _accel_sensitivity;
-		*p_z = ((float) z) / _accel_sensitivity;
-	}
+  r = icm20602_read_accel_raw(&x, &y, &z);
+  if (r) {
+    *p_x = ((float) x) / _accel_sensitivity;
+    *p_y = ((float) y) / _accel_sensitivity;
+    *p_z = ((float) z) / _accel_sensitivity;
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_gyro(float * p_x, float * p_y, float * p_z)
 {
-	int16_t x, y, z;
-	bool r = true;
+  int16_t x, y, z;
+  bool r = true;
 
-	r = icm20602_read_gyro_raw(&x, &y, &z);
-	if (r) {
-		*p_x = ((float) x) / _gyro_sensitivity;
-		*p_y = ((float) y) / _gyro_sensitivity;
-		*p_z = ((float) z) / _gyro_sensitivity;
-	}
+  r = icm20602_read_gyro_raw(&x, &y, &z);
+  if (r) {
+    *p_x = ((float) x) / _gyro_sensitivity;
+    *p_y = ((float) y) / _gyro_sensitivity;
+    *p_z = ((float) z) / _gyro_sensitivity;
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_data(float * p_ax, float * p_ay, float * p_az,
-	float * p_gx, float * p_gy, float * p_gz, float * p_t)
+  float * p_gx, float * p_gy, float * p_gz, float * p_t)
 {
-	int16_t ax, ay, az, gx, gy, gz, t;
-	bool r = true;
+  int16_t ax, ay, az, gx, gy, gz, t;
+  bool r = true;
 
-	r = icm20602_read_data_raw(&ax, &ay, &az, &gx, &gy, &gz, &t);
-	if (r) {
-		*p_ax = ((float) ax) / _accel_sensitivity;
-		*p_ay = ((float) ay) / _accel_sensitivity;
-		*p_az = ((float) az) / _accel_sensitivity;
-		*p_gx = ((float) gx) / _gyro_sensitivity;
-		*p_gy = ((float) gy) / _gyro_sensitivity;
-		*p_gz = ((float) gz) / _gyro_sensitivity;
-		*p_t = ((float) t) / _temp_sensitivity;
-	}
+  r = icm20602_read_data_raw(&ax, &ay, &az, &gx, &gy, &gz, &t);
+  if (r) {
+    *p_ax = ((float) ax) / _accel_sensitivity;
+    *p_ay = ((float) ay) / _accel_sensitivity;
+    *p_az = ((float) az) / _accel_sensitivity;
+    *p_gx = ((float) gx) / _gyro_sensitivity;
+    *p_gy = ((float) gy) / _gyro_sensitivity;
+    *p_gz = ((float) gz) / _gyro_sensitivity;
+    *p_t = ((float) t) / _temp_sensitivity;
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 {
-	uint8_t buf[8] = {0};
-	bool r = true;
+  uint8_t buf[8] = {0};
+  bool r = true;
 
-	r = _read_data(REG_ACCEL_XOUT_H, buf, 8);
-	if (r) {
-		UINT8_TO_INT16(*p_x, buf[0], buf[1]);
-		UINT8_TO_INT16(*p_y, buf[2], buf[3]);
-		UINT8_TO_INT16(*p_z, buf[4], buf[5]);
-		// buf[6] and buf[7] hold temperature
-	}
+  r = _read_data(REG_ACCEL_XOUT_H, buf, 8);
+  if (r) {
+    UINT8_TO_INT16(*p_x, buf[0], buf[1]);
+    UINT8_TO_INT16(*p_y, buf[2], buf[3]);
+    UINT8_TO_INT16(*p_z, buf[4], buf[5]);
+    // buf[6] and buf[7] hold temperature
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 {
-	uint8_t buf[6] = {0};
-	bool r = true;
+  uint8_t buf[6] = {0};
+  bool r = true;
 
-	r = _read_data(REG_GYRO_XOUT_H, buf, 6);
-	if (r) {
-		UINT8_TO_INT16(*p_x, buf[0], buf[1]);
-		UINT8_TO_INT16(*p_y, buf[2], buf[3]);
-		UINT8_TO_INT16(*p_z, buf[4], buf[5]);
-	}
+  r = _read_data(REG_GYRO_XOUT_H, buf, 6);
+  if (r) {
+    UINT8_TO_INT16(*p_x, buf[0], buf[1]);
+    UINT8_TO_INT16(*p_y, buf[2], buf[3]);
+    UINT8_TO_INT16(*p_z, buf[4], buf[5]);
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
-	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t)
+  int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t)
 {
-	uint8_t buf[14] = {0};
-	bool r = true;
+  uint8_t buf[14] = {0};
+  bool r = true;
 
-	r = _read_data(REG_ACCEL_XOUT_H, buf, 14);
-	if (r) {
-		UINT8_TO_INT16(*p_ax, buf[0], buf[1]);
-		UINT8_TO_INT16(*p_ay, buf[2], buf[3]);
-		UINT8_TO_INT16(*p_az, buf[4], buf[5]);
-		UINT8_TO_INT16(*p_t, buf[6], buf[7]);
-		UINT8_TO_INT16(*p_gx, buf[8], buf[9]);
-		UINT8_TO_INT16(*p_gy, buf[10], buf[11]);
-		UINT8_TO_INT16(*p_gz, buf[12], buf[13]);
-	}
+  r = _read_data(REG_ACCEL_XOUT_H, buf, 14);
+  if (r) {
+    UINT8_TO_INT16(*p_ax, buf[0], buf[1]);
+    UINT8_TO_INT16(*p_ay, buf[2], buf[3]);
+    UINT8_TO_INT16(*p_az, buf[4], buf[5]);
+    UINT8_TO_INT16(*p_t, buf[6], buf[7]);
+    UINT8_TO_INT16(*p_gx, buf[8], buf[9]);
+    UINT8_TO_INT16(*p_gy, buf[10], buf[11]);
+    UINT8_TO_INT16(*p_gz, buf[12], buf[13]);
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_accel_fifo(float * p_x, float * p_y, float * p_z)
 {
-	int16_t x, y, z;
-	bool r = true;
+  int16_t x, y, z;
+  bool r = true;
 
-	r = icm20602_read_fifo_accel_raw(&x, &y, &z);
-	if (r) {
-		*p_x = ((float) x) / _accel_sensitivity;
-		*p_y = ((float) y) / _accel_sensitivity;
-		*p_z = ((float) z) / _accel_sensitivity;
-	}
+  r = icm20602_read_fifo_accel_raw(&x, &y, &z);
+  if (r) {
+    *p_x = ((float) x) / _accel_sensitivity;
+    *p_y = ((float) y) / _accel_sensitivity;
+    *p_z = ((float) z) / _accel_sensitivity;
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_gyro_fifo(float * p_x, float * p_y, float * p_z)
 {
-	int16_t x, y, z;
-	bool r = true;
+  int16_t x, y, z;
+  bool r = true;
 
-	r = icm20602_read_fifo_gyro_raw(&x, &y, &z);
-	if (r) {
-		*p_x = ((float) x) / _gyro_sensitivity;
-		*p_y = ((float) y) / _gyro_sensitivity;
-		*p_z = ((float) z) / _gyro_sensitivity;
-	}
+  r = icm20602_read_fifo_gyro_raw(&x, &y, &z);
+  if (r) {
+    *p_x = ((float) x) / _gyro_sensitivity;
+    *p_y = ((float) y) / _gyro_sensitivity;
+    *p_z = ((float) z) / _gyro_sensitivity;
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_fifo_data(float * p_ax, float * p_ay, float * p_az,
-	float * p_gx, float * p_gy, float * p_gz, float * p_t)
+  float * p_gx, float * p_gy, float * p_gz, float * p_t)
 {
-	int16_t ax, ay, az, gx, gy, gz, t;
-	bool r = true;
+  int16_t ax, ay, az, gx, gy, gz, t;
+  bool r = true;
 
-	r = icm20602_read_fifo_data_raw(&ax, &ay, &az, &gx, &gy, &gz, &t);
-	if (r) {
-		*p_ax = ((float) ax) / _accel_sensitivity;
-		*p_ay = ((float) ay) / _accel_sensitivity;
-		*p_az = ((float) az) / _accel_sensitivity;
-		*p_gx = ((float) gx) / _gyro_sensitivity;
-		*p_gy = ((float) gy) / _gyro_sensitivity;
-		*p_gz = ((float) gz) / _gyro_sensitivity;
-		*p_t = ((float) t) / _temp_sensitivity;
-	}
+  r = icm20602_read_fifo_data_raw(&ax, &ay, &az, &gx, &gy, &gz, &t);
+  if (r) {
+    *p_ax = ((float) ax) / _accel_sensitivity;
+    *p_ay = ((float) ay) / _accel_sensitivity;
+    *p_az = ((float) az) / _accel_sensitivity;
+    *p_gx = ((float) gx) / _gyro_sensitivity;
+    *p_gy = ((float) gy) / _gyro_sensitivity;
+    *p_gz = ((float) gz) / _gyro_sensitivity;
+    *p_t = ((float) t) / _temp_sensitivity;
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_fifo_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 {
-	uint8_t buf[6] = {0};
-	bool r = true;
+  uint8_t buf[6] = {0};
+  bool r = true;
 
-	r = _read_data(REG_FIFO_R_W, buf, 6);
-	if (r) {
-		UINT8_TO_INT16(*p_x, buf[0], buf[1]);
-		UINT8_TO_INT16(*p_y, buf[2], buf[3]);
-		UINT8_TO_INT16(*p_z, buf[4], buf[5]);
-	}
+  r = _read_data(REG_FIFO_R_W, buf, 6);
+  if (r) {
+    UINT8_TO_INT16(*p_x, buf[0], buf[1]);
+    UINT8_TO_INT16(*p_y, buf[2], buf[3]);
+    UINT8_TO_INT16(*p_z, buf[4], buf[5]);
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_fifo_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z)
 {
-	uint8_t buf[6] = {0};
-	bool r = true;
+  uint8_t buf[6] = {0};
+  bool r = true;
 
-	r = _read_data(REG_FIFO_R_W, buf, 6);
-	if (r) {
-		UINT8_TO_INT16(*p_x, buf[0], buf[1]);
-		UINT8_TO_INT16(*p_y, buf[2], buf[3]);
-		UINT8_TO_INT16(*p_z, buf[4], buf[5]);
-	}
+  r = _read_data(REG_FIFO_R_W, buf, 6);
+  if (r) {
+    UINT8_TO_INT16(*p_x, buf[0], buf[1]);
+    UINT8_TO_INT16(*p_y, buf[2], buf[3]);
+    UINT8_TO_INT16(*p_z, buf[4], buf[5]);
+  }
 
-	return r;
+  return r;
 }
 
 bool
 icm20602_read_fifo_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
-	int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t)
+  int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t)
 {
-	uint8_t buf[14] = {0};
-	bool r = true;
+  uint8_t buf[14] = {0};
+  bool r = true;
 
-	r = _read_data(REG_FIFO_R_W, buf, 14);
-	if (r) {
-		UINT8_TO_INT16(*p_ax, buf[0], buf[1]);
-		UINT8_TO_INT16(*p_ay, buf[2], buf[3]);
-		UINT8_TO_INT16(*p_az, buf[4], buf[5]);
-		UINT8_TO_INT16(*p_t, buf[6], buf[7]);
-		UINT8_TO_INT16(*p_gx, buf[8], buf[9]);
-		UINT8_TO_INT16(*p_gy, buf[10], buf[11]);
-		UINT8_TO_INT16(*p_gz, buf[12], buf[13]);
-	}
+  r = _read_data(REG_FIFO_R_W, buf, 14);
+  if (r) {
+    UINT8_TO_INT16(*p_ax, buf[0], buf[1]);
+    UINT8_TO_INT16(*p_ay, buf[2], buf[3]);
+    UINT8_TO_INT16(*p_az, buf[4], buf[5]);
+    UINT8_TO_INT16(*p_t, buf[6], buf[7]);
+    UINT8_TO_INT16(*p_gx, buf[8], buf[9]);
+    UINT8_TO_INT16(*p_gy, buf[10], buf[11]);
+    UINT8_TO_INT16(*p_gz, buf[12], buf[13]);
+  }
 
-	return r;
+  return r;
 }
