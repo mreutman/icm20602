@@ -11,7 +11,7 @@
 /** This initializer will zero out the ICM20602 struct for initialization
   * purposes. This is advised as to avoid having uninitialized garbage values
   * left within the struct */
-#define icm20602_dev_INIT() \
+#define ICM20602_INIT() \
   { \
     .id = 0, \
     .hal_wr = NULL, \
@@ -36,7 +36,7 @@
   * that the developer should need to set manually are the "hal_wr", "hal_rd",
   * and "hal_sleep" function pointers. It is recommended to use this for
   * testing purposes. */
-#define icm20602_dev_DEFAULT() \
+#define ICM20602_DEFAULT_INIT() \
   { \
     .id = 0, \
     .hal_wr = NULL, \
