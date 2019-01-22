@@ -63,9 +63,9 @@
   * \param reg ICM20602 register address to target
   * \param data pointer to data to write
   * \param len number of bytes to write
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-typedef bool (*icm20602_hal_wr)(uint8_t id, uint8_t reg, uint8_t * data,
+typedef int8_t (*icm20602_hal_wr)(uint8_t id, uint8_t reg, uint8_t * data,
   uint16_t len);
 
 /** \brief Function pointer for read function.
@@ -73,9 +73,9 @@ typedef bool (*icm20602_hal_wr)(uint8_t id, uint8_t reg, uint8_t * data,
   * \param reg ICM20602 register address to target
   * \param data pointer to data to read
   * \param len number of bytes to read
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-typedef bool (*icm20602_hal_rd)(uint8_t id, uint8_t reg, uint8_t * data,
+typedef int8_t (*icm20602_hal_rd)(uint8_t id, uint8_t reg, uint8_t * data,
   uint16_t len);
 
 /** \brief Function pointer for sleep function.
@@ -194,18 +194,18 @@ struct icm20602_dev {
 
 /** \brief Initializes the ICM20602 sensor.
   * \param config pointer to configuration struct
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_init(struct icm20602_dev * dev);
 
 /** \brief Reads current G-force values of accelerometer.
   * \param p_x destination for x G value
   * \param p_y destination for y G value
   * \param p_z destination for z G value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_accel(struct icm20602_dev * dev, float * p_x, float * p_y,
   float * p_z);
 
@@ -213,9 +213,9 @@ icm20602_read_accel(struct icm20602_dev * dev, float * p_x, float * p_y,
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_gyro(struct icm20602_dev * dev, float * p_x, float * p_y,
   float * p_z);
 
@@ -227,9 +227,9 @@ icm20602_read_gyro(struct icm20602_dev * dev, float * p_x, float * p_y,
   * \param p_gy destination for gyroscope y DPS value
   * \param p_gz destination for gyroscope z DPS value
   * \param p_t destination for temperature degrees C value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   float * p_az, float * p_gx, float * p_gy, float * p_gz, float * p_t);
 
@@ -237,9 +237,9 @@ icm20602_read_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_accel_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   int16_t * p_z);
 
@@ -247,9 +247,9 @@ icm20602_read_accel_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_gyro_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   int16_t * p_z);
 
@@ -261,9 +261,9 @@ icm20602_read_gyro_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   * \param p_gy destination for gyroscope y value
   * \param p_gz destination for gyroscope z value
   * \param p_t destination for temperature value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
   int16_t * p_ay, int16_t * p_az, int16_t * p_gx, int16_t * p_gy,
   int16_t * p_gz, int16_t * p_t);
@@ -272,9 +272,9 @@ icm20602_read_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
   * \param p_x destination for x G value
   * \param p_y destination for y G value
   * \param p_z destination for z G value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_accel_fifo(struct icm20602_dev * dev, float * x, float * y,
   float * z);
 
@@ -282,9 +282,9 @@ icm20602_read_accel_fifo(struct icm20602_dev * dev, float * x, float * y,
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_gyro_fifo(struct icm20602_dev * dev, float * x, float * y,
   float * z);
 
@@ -298,9 +298,9 @@ icm20602_read_gyro_fifo(struct icm20602_dev * dev, float * x, float * y,
   * \param p_gy destination for gyroscope y DPS value
   * \param p_gz destination for gyroscope z DPS value
   * \param p_t destination for temperature degrees C value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_fifo_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   float * p_az, float * p_gx, float * p_gy, float * p_gz, float * p_t);
 
@@ -308,9 +308,9 @@ icm20602_read_fifo_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_fifo_accel_raw(struct icm20602_dev * dev, int16_t * p_x,
   int16_t * p_y, int16_t * p_z);
 
@@ -318,9 +318,9 @@ icm20602_read_fifo_accel_raw(struct icm20602_dev * dev, int16_t * p_x,
   * \param p_x destination for x value
   * \param p_y destination for y value
   * \param p_z destination for z value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_fifo_gyro_raw(struct icm20602_dev * dev, int16_t * p_x,
   int16_t * p_y, int16_t * p_z);
 
@@ -334,9 +334,9 @@ icm20602_read_fifo_gyro_raw(struct icm20602_dev * dev, int16_t * p_x,
   * \param p_gy destination for gyroscope y value
   * \param p_gz destination for gyroscope z value
   * \param p_t destination for temperature value
-  * \return true on success, error on failure
+  * \return zero on success, anything else is an error
   */
-extern bool
+extern int8_t
 icm20602_read_fifo_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
   int16_t * p_ay, int16_t * p_az, int16_t * p_gx, int16_t * p_gy,
   int16_t * p_gz, int16_t * p_t);

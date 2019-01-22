@@ -142,10 +142,10 @@ _get_gyro_sensitivity(enum icm20602_gyro_dps gyro_dps)
   return f;
 }
 
-bool
+int8_t
 _read_data(struct icm20602_dev * dev, uint8_t reg, uint8_t * buf, uint32_t len)
 {
-  bool r = true;
+  int8_t r = 0;
 
   if ((!dev->hal_wr) || (!dev->hal_rd) || (!dev->hal_sleep)) {
     return false;
@@ -166,11 +166,11 @@ _read_data(struct icm20602_dev * dev, uint8_t reg, uint8_t * buf, uint32_t len)
 
 /***** Global Functions *****/
 
-bool
+int8_t
 icm20602_init(struct icm20602_dev * dev)
 {
   uint8_t tmp = 0;
-  bool r = true;
+  int8_t r = 0;
 
   if ((!dev->hal_wr) || (!dev->hal_rd) || (!dev->hal_sleep)) {
     return false;
@@ -295,18 +295,18 @@ return_err:
   return r;
 }
 
-bool
+int8_t
 icm20602_read_accel(struct icm20602_dev * dev, float * p_x, float * p_y,
   float * p_z)
 {
   float accel_sensitivity;
   int16_t x, y, z;
-  bool r = true;
+  int8_t r = 0;
 
   accel_sensitivity = _get_accel_sensitivity(dev->accel_g);
 
   r = icm20602_read_accel_raw(dev, &x, &y, &z);
-  if (r) {
+  if (0 == r) {
     *p_x = ((float) x) / accel_sensitivity;
     *p_y = ((float) y) / accel_sensitivity;
     *p_z = ((float) z) / accel_sensitivity;
@@ -315,18 +315,18 @@ icm20602_read_accel(struct icm20602_dev * dev, float * p_x, float * p_y,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_gyro(struct icm20602_dev * dev, float * p_x, float * p_y,
   float * p_z)
 {
   float gyro_sensitivity;
   int16_t x, y, z;
-  bool r = true;
+  int8_t r = 0;
 
   gyro_sensitivity = _get_gyro_sensitivity(dev->gyro_dps);
 
   r = icm20602_read_gyro_raw(dev, &x, &y, &z);
-  if (r) {
+  if (0 == r) {
     *p_x = ((float) x) / gyro_sensitivity;
     *p_y = ((float) y) / gyro_sensitivity;
     *p_z = ((float) z) / gyro_sensitivity;
@@ -335,20 +335,20 @@ icm20602_read_gyro(struct icm20602_dev * dev, float * p_x, float * p_y,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   float * p_az, float * p_gx, float * p_gy, float * p_gz, float * p_t)
 {
   float accel_sensitivity;
   float gyro_sensitivity;
   int16_t ax, ay, az, gx, gy, gz, t;
-  bool r = true;
+  int8_t r = 0;
 
   accel_sensitivity = _get_accel_sensitivity(dev->accel_g);
   gyro_sensitivity = _get_gyro_sensitivity(dev->gyro_dps);
 
   r = icm20602_read_data_raw(dev, &ax, &ay, &az, &gx, &gy, &gz, &t);
-  if (r) {
+  if (0 == r) {
     *p_ax = ((float) ax) / accel_sensitivity;
     *p_ay = ((float) ay) / accel_sensitivity;
     *p_az = ((float) az) / accel_sensitivity;
@@ -361,15 +361,15 @@ icm20602_read_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_accel_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   int16_t * p_z)
 {
   uint8_t buf[8] = {0};
-  bool r = true;
+  int8_t r = 0;
 
   r = _read_data(dev, REG_ACCEL_XOUT_H, buf, 8);
-  if (r) {
+  if (0 == r) {
     UINT8_TO_INT16(*p_x, buf[0], buf[1]);
     UINT8_TO_INT16(*p_y, buf[2], buf[3]);
     UINT8_TO_INT16(*p_z, buf[4], buf[5]);
@@ -379,15 +379,15 @@ icm20602_read_accel_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_gyro_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   int16_t * p_z)
 {
   uint8_t buf[6] = {0};
-  bool r = true;
+  int8_t r = 0;
 
   r = _read_data(dev, REG_GYRO_XOUT_H, buf, 6);
-  if (r) {
+  if (0 == r) {
     UINT8_TO_INT16(*p_x, buf[0], buf[1]);
     UINT8_TO_INT16(*p_y, buf[2], buf[3]);
     UINT8_TO_INT16(*p_z, buf[4], buf[5]);
@@ -396,16 +396,16 @@ icm20602_read_gyro_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
   int16_t * p_ay, int16_t * p_az, int16_t * p_gx, int16_t * p_gy,
   int16_t * p_gz, int16_t * p_t)
 {
   uint8_t buf[14] = {0};
-  bool r = true;
+  int8_t r = 0;
 
   r = _read_data(dev, REG_ACCEL_XOUT_H, buf, 14);
-  if (r) {
+  if (0 == r) {
     UINT8_TO_INT16(*p_ax, buf[0], buf[1]);
     UINT8_TO_INT16(*p_ay, buf[2], buf[3]);
     UINT8_TO_INT16(*p_az, buf[4], buf[5]);
@@ -418,18 +418,18 @@ icm20602_read_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_accel_fifo(struct icm20602_dev * dev, float * p_x, float * p_y,
   float * p_z)
 {
   float accel_sensitivity;
   int16_t x, y, z;
-  bool r = true;
+  int8_t r = 0;
 
   accel_sensitivity = _get_accel_sensitivity(dev->accel_g);
 
   r = icm20602_read_fifo_accel_raw(dev, &x, &y, &z);
-  if (r) {
+  if (0 == r) {
     *p_x = ((float) x) / accel_sensitivity;
     *p_y = ((float) y) / accel_sensitivity;
     *p_z = ((float) z) / accel_sensitivity;
@@ -438,18 +438,18 @@ icm20602_read_accel_fifo(struct icm20602_dev * dev, float * p_x, float * p_y,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_gyro_fifo(struct icm20602_dev * dev, float * p_x, float * p_y,
   float * p_z)
 {
   float gyro_sensitivity;
   int16_t x, y, z;
-  bool r = true;
+  int8_t r = 0;
 
   gyro_sensitivity = _get_gyro_sensitivity(dev->gyro_dps);
 
   r = icm20602_read_fifo_gyro_raw(dev, &x, &y, &z);
-  if (r) {
+  if (0 == r) {
     *p_x = ((float) x) / gyro_sensitivity;
     *p_y = ((float) y) / gyro_sensitivity;
     *p_z = ((float) z) / gyro_sensitivity;
@@ -458,20 +458,20 @@ icm20602_read_gyro_fifo(struct icm20602_dev * dev, float * p_x, float * p_y,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_fifo_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   float * p_az, float * p_gx, float * p_gy, float * p_gz, float * p_t)
 {
   float accel_sensitivity;
   float gyro_sensitivity;
   int16_t ax, ay, az, gx, gy, gz, t;
-  bool r = true;
+  int8_t r = 0;
 
   accel_sensitivity = _get_accel_sensitivity(dev->accel_g);
   gyro_sensitivity = _get_gyro_sensitivity(dev->gyro_dps);
 
   r = icm20602_read_fifo_data_raw(dev, &ax, &ay, &az, &gx, &gy, &gz, &t);
-  if (r) {
+  if (0 == r) {
     *p_ax = ((float) ax) / accel_sensitivity;
     *p_ay = ((float) ay) / accel_sensitivity;
     *p_az = ((float) az) / accel_sensitivity;
@@ -484,15 +484,15 @@ icm20602_read_fifo_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_fifo_accel_raw(struct icm20602_dev * dev, int16_t * p_x,
   int16_t * p_y, int16_t * p_z)
 {
   uint8_t buf[6] = {0};
-  bool r = true;
+  int8_t r = 0;
 
   r = _read_data(dev, REG_FIFO_R_W, buf, 6);
-  if (r) {
+  if (0 == r) {
     UINT8_TO_INT16(*p_x, buf[0], buf[1]);
     UINT8_TO_INT16(*p_y, buf[2], buf[3]);
     UINT8_TO_INT16(*p_z, buf[4], buf[5]);
@@ -501,15 +501,15 @@ icm20602_read_fifo_accel_raw(struct icm20602_dev * dev, int16_t * p_x,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_fifo_gyro_raw(struct icm20602_dev * dev, int16_t * p_x,
   int16_t * p_y, int16_t * p_z)
 {
   uint8_t buf[6] = {0};
-  bool r = true;
+  int8_t r = 0;
 
   r = _read_data(dev, REG_FIFO_R_W, buf, 6);
-  if (r) {
+  if (0 == r) {
     UINT8_TO_INT16(*p_x, buf[0], buf[1]);
     UINT8_TO_INT16(*p_y, buf[2], buf[3]);
     UINT8_TO_INT16(*p_z, buf[4], buf[5]);
@@ -518,16 +518,16 @@ icm20602_read_fifo_gyro_raw(struct icm20602_dev * dev, int16_t * p_x,
   return r;
 }
 
-bool
+int8_t
 icm20602_read_fifo_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
   int16_t * p_ay, int16_t * p_az, int16_t * p_gx, int16_t * p_gy,
   int16_t * p_gz, int16_t * p_t)
 {
   uint8_t buf[14] = {0};
-  bool r = true;
+  int8_t r = 0;
 
   r = _read_data(dev, REG_FIFO_R_W, buf, 14);
-  if (r) {
+  if (0 == r) {
     UINT8_TO_INT16(*p_ax, buf[0], buf[1]);
     UINT8_TO_INT16(*p_ay, buf[2], buf[3]);
     UINT8_TO_INT16(*p_az, buf[4], buf[5]);
