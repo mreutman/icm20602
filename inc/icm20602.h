@@ -11,8 +11,9 @@
 /** This initializer will zero out the ICM20602 struct for initialization
   * purposes. This is advised as to avoid having uninitialized garbage values
   * left within the struct */
-#define ICM20602_CONFIG_INIT() \
+#define icm20602_dev_INIT() \
   { \
+    .id = 0, \
     .hal_wr = NULL, \
     .hal_rd = NULL, \
     .hal_sleep = NULL, \
@@ -35,8 +36,9 @@
   * that the developer should need to set manually are the "hal_wr", "hal_rd",
   * and "hal_sleep" function pointers. It is recommended to use this for
   * testing purposes. */
-#define ICM20602_CONFIG_DEFAULT() \
+#define icm20602_dev_DEFAULT() \
   { \
+    .id = 0, \
     .hal_wr = NULL, \
     .hal_rd = NULL, \
     .hal_sleep = NULL, \
@@ -56,11 +58,43 @@
 
 /***** Typedefs *****/
 
-typedef bool (*icm20602_hal_wr)(uint8_t, uint8_t *, uint32_t);
-typedef bool (*icm20602_hal_rd)(uint8_t, uint8_t *, uint32_t);
+/** \brief Function pointer for write function.
+  * \param id the ID value of the icm20602 device struct
+  * \param reg ICM20602 register address to target
+  * \param data pointer to data to write
+  * \param len number of bytes to write
+  * \return true on success, error on failure
+  */
+typedef bool (*icm20602_hal_wr)(uint8_t id, uint8_t reg, uint8_t * data,
+  uint16_t len);
+
+/** \brief Function pointer for read function.
+  * \param id the ID value of the icm20602 device struct
+  * \param reg ICM20602 register address to target
+  * \param data pointer to data to read
+  * \param len number of bytes to read
+  * \return true on success, error on failure
+  */
+typedef bool (*icm20602_hal_rd)(uint8_t id, uint8_t reg, uint8_t * data,
+  uint16_t len);
+
+/** \brief Function pointer for sleep function.
+  * \param ms the total number of milliseconds to sleep for
+  * \return void
+  */
 typedef void (*icm20602_hal_sleep)(uint32_t ms);
-typedef void (*icm20602_mutex_lock)(void);
-typedef void (*icm20602_mutex_unlock)(void);
+
+/** \brief Function pointer for mutex locking function.
+  * \param id the ID value of the icm20602 device struct
+  * \return void
+  */
+typedef void (*icm20602_mutex_lock)(uint8_t id);
+
+/** \brief Function pointer for mutex unlocking function.
+  * \param id the ID value of the icm20602 device struct
+  * \return void
+  */
+typedef void (*icm20602_mutex_unlock)(uint8_t id);
 
 /***** Enums *****/
 
@@ -115,7 +149,10 @@ enum icm20602_gyro_dps {
 
 /***** Structs *****/
 
-struct icm20602_config {
+struct icm20602_dev {
+  /// Identifier, can be I2C address, SPI CS line, or some other unique value.
+  uint8_t id;
+
   /// Required function pointer for register write function.
   icm20602_hal_wr hal_wr;
   /// Required function pointer for register read function.
@@ -160,7 +197,7 @@ struct icm20602_config {
   * \return true on success, error on failure
   */
 extern bool
-icm20602_init(struct icm20602_config * config);
+icm20602_init(struct icm20602_dev * dev);
 
 /** \brief Reads current G-force values of accelerometer.
   * \param p_x destination for x G value
@@ -169,7 +206,8 @@ icm20602_init(struct icm20602_config * config);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_accel(float * p_x, float * p_y, float * p_z);
+icm20602_read_accel(struct icm20602_dev * dev, float * p_x, float * p_y,
+  float * p_z);
 
 /** \brief Reads current degrees per second values of gyroscope.
   * \param p_x destination for x value
@@ -178,7 +216,8 @@ icm20602_read_accel(float * p_x, float * p_y, float * p_z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_gyro(float * p_x, float * p_y, float * p_z);
+icm20602_read_gyro(struct icm20602_dev * dev, float * p_x, float * p_y,
+  float * p_z);
 
 /** \brief Reads current values of accelerometer and gyroscope.
   * \param p_ax destination for accelerometer x G value
@@ -191,8 +230,8 @@ icm20602_read_gyro(float * p_x, float * p_y, float * p_z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_data(float * p_ax, float * p_ay, float * p_az,
-  float * p_gx, float * p_gy, float * p_gz, float * p_t);
+icm20602_read_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
+  float * p_az, float * p_gx, float * p_gy, float * p_gz, float * p_t);
 
 /** \brief Reads current raw values of accelerometer.
   * \param p_x destination for x value
@@ -201,7 +240,8 @@ icm20602_read_data(float * p_ax, float * p_ay, float * p_az,
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+icm20602_read_accel_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
+  int16_t * p_z);
 
 /** \brief Reads current raw values of gyroscope.
   * \param p_x destination for x value
@@ -210,7 +250,8 @@ icm20602_read_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+icm20602_read_gyro_raw(struct icm20602_dev * dev, int16_t * p_x, int16_t * p_y,
+  int16_t * p_z);
 
 /** \brief Reads current raw values of accelerometer and gyroscope.
   * \param p_ax destination for accelerometer x value
@@ -223,8 +264,9 @@ icm20602_read_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
-  int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t);
+icm20602_read_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
+  int16_t * p_ay, int16_t * p_az, int16_t * p_gx, int16_t * p_gy,
+  int16_t * p_gz, int16_t * p_t);
 
 /** \brief Reads FIFO G-force values of accelerometer.
   * \param p_x destination for x G value
@@ -233,7 +275,8 @@ icm20602_read_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_accel_fifo(float * x, float * y, float * z);
+icm20602_read_accel_fifo(struct icm20602_dev * dev, float * x, float * y,
+  float * z);
 
 /** \brief Reads FIFO degrees per second values of gyroscope.
   * \param p_x destination for x value
@@ -242,7 +285,8 @@ icm20602_read_accel_fifo(float * x, float * y, float * z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_gyro_fifo(float * x, float * y, float * z);
+icm20602_read_gyro_fifo(struct icm20602_dev * dev, float * x, float * y,
+  float * z);
 
 /** \brief Reads FIFO values of accelerometer and gyroscope. Note, both
   *        accelerometer and gyroscope fifos should be enabled if this
@@ -257,8 +301,8 @@ icm20602_read_gyro_fifo(float * x, float * y, float * z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_fifo_data(float * p_ax, float * p_ay, float * p_az,
-  float * p_gx, float * p_gy, float * p_gz, float * p_t);
+icm20602_read_fifo_data(struct icm20602_dev * dev, float * p_ax, float * p_ay,
+  float * p_az, float * p_gx, float * p_gy, float * p_gz, float * p_t);
 
 /** \brief Reads FIFO raw values of accelerometer.
   * \param p_x destination for x value
@@ -267,7 +311,8 @@ icm20602_read_fifo_data(float * p_ax, float * p_ay, float * p_az,
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_fifo_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+icm20602_read_fifo_accel_raw(struct icm20602_dev * dev, int16_t * p_x,
+  int16_t * p_y, int16_t * p_z);
 
 /** \brief Reads FIFO raw values of gyroscope.
   * \param p_x destination for x value
@@ -276,7 +321,8 @@ icm20602_read_fifo_accel_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_fifo_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
+icm20602_read_fifo_gyro_raw(struct icm20602_dev * dev, int16_t * p_x,
+  int16_t * p_y, int16_t * p_z);
 
 /** \brief Reads FIFO raw values of accelerometer and gyroscope. Note, both
   *        accelerometer and gyroscope fifos should be enabled if this
@@ -291,7 +337,8 @@ icm20602_read_fifo_gyro_raw(int16_t * p_x, int16_t * p_y, int16_t * p_z);
   * \return true on success, error on failure
   */
 extern bool
-icm20602_read_fifo_data_raw(int16_t * p_ax, int16_t * p_ay, int16_t * p_az,
-  int16_t * p_gx, int16_t * p_gy, int16_t * p_gz, int16_t * p_t);
+icm20602_read_fifo_data_raw(struct icm20602_dev * dev, int16_t * p_ax,
+  int16_t * p_ay, int16_t * p_az, int16_t * p_gx, int16_t * p_gy,
+  int16_t * p_gz, int16_t * p_t);
 
 #endif
