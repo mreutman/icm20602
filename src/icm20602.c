@@ -191,48 +191,56 @@ icm20602_init(struct icm20602_dev * dev)
   // full reset of chip
   tmp = 0x80;
   r = dev->hal_wr(dev->id, REG_PWR_MGMT_1, &tmp, 1);
-  ON_ERROR_GOTO(r, return_err);
+  ON_ERROR_GOTO((0 == r), return_err);
 
   // TODO: better reset delay value
   dev->hal_sleep(1000);
 
+  // verify we are able to read from the chip
+  r = dev->hal_rd(dev->id, REG_WHO_AM_I, &tmp, 1);
+  ON_ERROR_GOTO((0 == r), return_err);
+  if (REG_WHO_AM_I_CONST != tmp) {
+    r = -1;
+    ON_ERROR_GOTO((0 == r), return_err);
+  }
+
   // set clock to internal PLL
   tmp = 0x01;
   r = dev->hal_wr(dev->id, REG_PWR_MGMT_1, &tmp, 1);
-  ON_ERROR_GOTO(r, return_err);
+  ON_ERROR_GOTO((0 == r), return_err);
 
   // place accel and gyro on standby
   tmp = 0x3F;
   r = dev->hal_wr(dev->id, REG_PWR_MGMT_2, &tmp, 1);
-  ON_ERROR_GOTO(r, return_err);
+  ON_ERROR_GOTO((0 == r), return_err);
 
   // disable fifo
   tmp = 0x00;
   r = dev->hal_wr(dev->id, REG_USER_CTRL, &tmp, 1);
-  ON_ERROR_GOTO(r, return_err);
+  ON_ERROR_GOTO((0 == r), return_err);
 
   if (dev->i2c_disable) {
     // disable chip I2C communications
     tmp = 0x40;
     r = dev->hal_wr(dev->id, REG_I2C_IF, &tmp, 1);
-    ON_ERROR_GOTO(r, return_err);
+    ON_ERROR_GOTO((0 == r), return_err);
   }
 
   if (dev->use_accel) {
     if (ICM20602_ACCEL_DLPF_BYPASS_1046_HZ == dev->accel_dlpf) {
       tmp = (1 << 3);
       r = dev->hal_wr(dev->id, REG_ACCEL_CONFIG_2, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
     }
     else {
       tmp = dev->accel_dlpf;
       r = dev->hal_wr(dev->id, REG_ACCEL_CONFIG_2, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
     }
 
     tmp = (dev->accel_g) << 2;
     r = dev->hal_wr(dev->id, REG_ACCEL_CONFIG, &tmp, 1);
-    ON_ERROR_GOTO(r, return_err);
+    ON_ERROR_GOTO((0 == r), return_err);
   }
 
   if (dev->use_gyro) {
@@ -240,31 +248,31 @@ icm20602_init(struct icm20602_dev * dev)
       // bypass dpf and set dps
       tmp = 0x00;
       r = dev->hal_wr(dev->id, REG_CONFIG, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
 
       tmp = (dev->gyro_dps << 3) | 0x02; // see table page 37 of datasheet
       r = dev->hal_wr(dev->id, REG_GYRO_CONFIG, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
     }
     else if (ICM20602_GYRO_DLPF_BYPASS_8173_HZ == dev->gyro_dlpf) {
       // bypass dpf and set dps
       tmp = 0x00;
       r = dev->hal_wr(dev->id, REG_CONFIG, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
 
       tmp = (dev->gyro_dps << 3) | 0x01; // see table page 37 of datasheet
       r = dev->hal_wr(dev->id, REG_GYRO_CONFIG, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
     }
     else {
       // configure dpf and set dps
       tmp = dev->gyro_dlpf;
       r = dev->hal_wr(dev->id, REG_CONFIG, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
 
       tmp = dev->gyro_dps << 3;
       r = dev->hal_wr(dev->id, REG_GYRO_CONFIG, &tmp, 1);
-      ON_ERROR_GOTO(r, return_err);
+      ON_ERROR_GOTO((0 == r), return_err);
     }
   }
 
@@ -272,19 +280,19 @@ icm20602_init(struct icm20602_dev * dev)
   tmp = ((dev->use_accel) && (dev->accel_fifo)) ? 0x08 : 0x00;
   tmp |= ((dev->use_gyro) && (dev->gyro_fifo)) ? 0x10 : 0x00;
   r = dev->hal_wr(dev->id, REG_FIFO_EN, &tmp, 1);
-  ON_ERROR_GOTO(r, return_err);
+  ON_ERROR_GOTO((0 == r), return_err);
 
   // configure sample rate divider (TODO: is this gyro only?)
   // note: SAMPLE_RATE = INTERNAL_SAMPLE_RATE / (1 + SMPLRT_DIV)
   tmp = (0 != dev->sample_rate_div) ? dev->sample_rate_div - 1 : 1;
   r = dev->hal_wr(dev->id, REG_SMPLRT_DIV, &tmp, 1);
-  ON_ERROR_GOTO(r, return_err);
+  ON_ERROR_GOTO((0 == r), return_err);
 
   tmp = 0;
   tmp |= (dev->use_gyro) ? 0 : 0x07; // 0 - on, 1 - disabled
   tmp |= (dev->use_accel) ? 0 : 0x38; // 0 - on, 1 - disabled
   r = dev->hal_wr(dev->id, REG_PWR_MGMT_2, &tmp, 1);
-  ON_ERROR_GOTO(r, return_err);
+  ON_ERROR_GOTO((0 == r), return_err);
 
 return_err:
 
